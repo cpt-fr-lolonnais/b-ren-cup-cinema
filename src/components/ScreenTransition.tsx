@@ -15,7 +15,7 @@ export default function ScreenTransition({ screenKey, children }: Props) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -40, scale: 0.96 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="fixed inset-0 flex items-center justify-center z-10"
+        className="fixed inset-0 flex items-center justify-center z-10 overflow-y-auto"
       >
         {children}
       </motion.div>

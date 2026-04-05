@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useTournamentStore, DEMO_SMALL_FINAL, RaceResult, TEAM_COLORS } from '@/store/tournament';
 import RaceResultInput from '@/components/RaceResultInput';
 import NavButtons from '@/components/NavButtons';
-import CountUp from '@/components/CountUp';
 import { SlideDown, StaggerItem } from '@/components/Stagger';
 
 export default function SmallFinalResults() {
@@ -29,13 +28,22 @@ export default function SmallFinalResults() {
     }
   }, [smallFinalResults]);
 
-  if (!teamA || !teamB) return null;
+  if (!teamA || !teamB) {
+    return (
+      <div className="flex flex-col items-center justify-center px-6">
+        <p className="text-muted-foreground font-body text-center">
+          Bitte zuerst die vorherigen Ergebnisse eintragen.
+        </p>
+        <NavButtons hideNext />
+      </div>
+    );
+  }
 
   const result = smallFinalResults.length === 4 ? getMatchWinner(smallFinalResults, teamA, teamB) : null;
   const canAdvance = smallFinalResults.length === 4 && smallFinalResults.every(r => r.gpPoints > 0);
 
   return (
-    <div className="flex flex-col items-center justify-center px-6 max-w-3xl mx-auto w-full">
+    <div className="flex flex-col items-center justify-start px-6 max-w-3xl mx-auto w-full h-full overflow-y-auto py-12">
       <SlideDown>
         <h1 className="text-2xl md:text-4xl font-display text-center mb-1 glow-accent">KLEINER FINAL</h1>
       </SlideDown>

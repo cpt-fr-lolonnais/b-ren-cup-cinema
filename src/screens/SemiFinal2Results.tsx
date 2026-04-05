@@ -26,13 +26,22 @@ export default function SemiFinal2Results() {
     }
   }, [sf2Results]);
 
-  if (!matchups || !teamA || !teamB) return null;
+  if (!matchups || !teamA || !teamB) {
+    return (
+      <div className="flex flex-col items-center justify-center px-6">
+        <p className="text-muted-foreground font-body text-center">
+          Bitte zuerst die vorherigen Ergebnisse eintragen.
+        </p>
+        <NavButtons hideNext />
+      </div>
+    );
+  }
 
   const result = sf2Results.length === 4 ? getMatchWinner(sf2Results, teamA, teamB) : null;
   const canAdvance = sf2Results.length === 4 && sf2Results.every(r => r.gpPoints > 0);
 
   return (
-    <div className="flex flex-col items-center justify-center px-6 max-w-3xl mx-auto w-full">
+    <div className="flex flex-col items-center justify-start px-6 max-w-3xl mx-auto w-full h-full overflow-y-auto py-12">
       <SlideDown>
         <h1 className="text-2xl md:text-4xl font-display text-center mb-1 glow-accent">HALBFINAL 2</h1>
       </SlideDown>

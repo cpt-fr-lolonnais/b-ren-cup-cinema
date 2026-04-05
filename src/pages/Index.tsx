@@ -43,7 +43,8 @@ export default function Index() {
   const { currentScreen, nextScreen, prevScreen } = useTournamentStore();
 
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
+  const handleKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
         nextScreen();

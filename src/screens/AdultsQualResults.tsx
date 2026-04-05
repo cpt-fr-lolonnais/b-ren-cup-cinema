@@ -14,7 +14,7 @@ export default function AdultsQualResults() {
   const canAdvance = adultsQualification.length === 4 && adultsQualification.every(r => r.gpPoints > 0);
 
   return (
-    <div className="flex flex-col items-center justify-center px-6 max-w-3xl mx-auto w-full">
+    <div className="flex flex-col items-center justify-start px-6 max-w-3xl mx-auto w-full h-full overflow-y-auto py-12">
       <SlideDown>
         <h1 className="text-2xl md:text-4xl font-display text-center mb-2 glow-accent">
           ERWACHSENEN-QUALIFIKATION

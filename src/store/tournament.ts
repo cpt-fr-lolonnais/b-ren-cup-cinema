@@ -122,6 +122,7 @@ interface TournamentState {
   setGrandFinalResults: (r: RaceResult[]) => void;
 
   resetAll: () => void;
+  undoLastTeam: () => void;
   loadDemoData: () => void;
 
   getTeamRankings: () => TeamRanking[];
@@ -174,6 +175,15 @@ export const useTournamentStore = create<TournamentState>((set, get) => ({
   setGrandFinalResults: (r) => set({ grandFinalResults: r }),
 
   resetAll: () => set({ ...initialState, isPreview: false, currentScreen: 1 }),
+
+  undoLastTeam: () => {
+    const state = get();
+    if (state.teams.length === 0) return;
+    set({
+      teams: state.teams.slice(0, -1),
+      draftStep: state.draftStep - 1,
+    });
+  },
 
   loadDemoData: () => {
     const teams: Team[] = DEMO_DRAFT.map(([kid, adult], i) => {

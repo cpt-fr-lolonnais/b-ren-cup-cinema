@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Undo2 } from 'lucide-react';
 import { useTournamentStore, ADULTS, DEMO_DRAFT, TEAM_COLORS } from '@/store/tournament';
 import Avatar from '@/components/Avatar';
 import NavButtons from '@/components/NavButtons';
 import { SlideDown, StaggerItem } from '@/components/Stagger';
 
 export default function TeamDraftScreen() {
-  const { kidsQualification, isPreview, teams, addTeam, draftStep, setDraftStep, nextScreen } = useTournamentStore();
+  const { kidsQualification, isPreview, teams, addTeam, draftStep, setDraftStep, undoLastTeam, nextScreen } = useTournamentStore();
   const [showTeamReveal, setShowTeamReveal] = useState(false);
   const [animatingPair, setAnimatingPair] = useState(false);
 
@@ -16,13 +17,21 @@ export default function TeamDraftScreen() {
   const pickedAdults = teams.map(t => t.adult);
   const availableAdults = ADULTS.filter(a => !pickedAdults.includes(a));
 
-  // Preview auto-selection
+  // Preview auto-selection (inlined to avoid stale closure)
   useEffect(() => {
     if (!isPreview || draftStep >= 4) return;
     const timer = setTimeout(() => {
       const demoPick = DEMO_DRAFT[draftStep];
-      if (demoPick) {
-        handlePick(demoPick[1]);
+      if (demoPick && !animatingPair) {
+        const kid = kidsByRank[draftStep];
+        if (kid) {
+          setAnimatingPair(true);
+          addTeam(kid.name, demoPick[1]);
+          setTimeout(() => {
+            setDraftStep(draftStep + 1);
+            setAnimatingPair(false);
+          }, 1200);
+        }
       }
     }, 2000);
     return () => clearTimeout(timer);
@@ -137,6 +146,20 @@ export default function TeamDraftScreen() {
           />
         ))}
       </div>
+
+      {/* Undo button */}
+      {draftStep > 0 && !animatingPair && (
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.6 }}
+          whileHover={{ opacity: 1 }}
+          onClick={() => undoLastTeam()}
+          className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground transition"
+        >
+          <Undo2 size={14} />
+          Rückgängig
+        </motion.button>
+      )}
 
       <NavButtons hideNext />
     </div>

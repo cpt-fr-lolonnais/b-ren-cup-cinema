@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Check } from 'lucide-react';
 import Avatar from './Avatar';
 import { RaceResult, TEAM_COLORS, useTournamentStore } from '@/store/tournament';
 
@@ -17,6 +18,7 @@ interface Props {
 export default function RaceResultInput({ participants, onComplete, isPreview, previewResults, showTeamColors }: Props) {
   const [placed, setPlaced] = useState<RaceResult[]>([]);
   const [gpPoints, setGpPoints] = useState<Record<string, number>>({});
+  const [confirmed, setConfirmed] = useState(false);
   const getTeamByMember = useTournamentStore(s => s.getTeamByMember);
   const getTeamColor = useTournamentStore(s => s.getTeamColor);
 
@@ -28,6 +30,18 @@ export default function RaceResultInput({ participants, onComplete, isPreview, p
       setGpPoints(pts);
     }
   }, [isPreview, previewResults]);
+
+  // Auto-confirm in preview mode
+  useEffect(() => {
+    if (isPreview && previewResults && placed.length === 4 && !confirmed) {
+      const timer = setTimeout(() => {
+        const finalResults = placed.map(r => ({ ...r, gpPoints: gpPoints[r.name] ?? 0 }));
+        onComplete(finalResults);
+        setConfirmed(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isPreview, previewResults, placed, gpPoints, confirmed, onComplete]);
 
   const available = participants.filter(p => !placed.find(r => r.name === p));
   const allPlaced = placed.length === 4;
@@ -42,11 +56,11 @@ export default function RaceResultInput({ participants, onComplete, isPreview, p
     setGpPoints(prev => ({ ...prev, [name]: val }));
   }, []);
 
-  useEffect(() => {
-    if (allGpFilled) {
-      onComplete(placed.map(r => ({ ...r, gpPoints: gpPoints[r.name] ?? 0 })));
-    }
-  }, [allGpFilled, placed, gpPoints, onComplete]);
+  const handleConfirm = useCallback(() => {
+    const finalResults = placed.map(r => ({ ...r, gpPoints: gpPoints[r.name] ?? 0 }));
+    onComplete(finalResults);
+    setConfirmed(true);
+  }, [placed, gpPoints, onComplete]);
 
   const getTeamBorder = (name: string) => {
     if (!showTeamColors) return undefined;
@@ -85,7 +99,7 @@ export default function RaceResultInput({ participants, onComplete, isPreview, p
                       value={gpPoints[placed[i].name] ?? ''}
                       onChange={e => updateGp(placed[i].name, parseInt(e.target.value) || 0)}
                       className="w-14 h-8 rounded-md bg-muted border border-border text-center text-sm text-foreground font-body"
-                      disabled={isPreview}
+                      disabled={isPreview || confirmed}
                     />
                   </div>
                 </motion.div>
@@ -116,6 +130,33 @@ export default function RaceResultInput({ participants, onComplete, isPreview, p
             ))}
           </div>
         </div>
+      )}
+
+      {/* Confirm button (only in live mode) */}
+      {!isPreview && allGpFilled && !confirmed && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex justify-center pt-2"
+        >
+          <button
+            onClick={handleConfirm}
+            className="bg-primary text-primary-foreground rounded-full px-6 py-2 font-body font-semibold flex items-center gap-2 hover:opacity-90 transition"
+          >
+            <Check size={18} />
+            Bestätigen
+          </button>
+        </motion.div>
+      )}
+
+      {confirmed && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center text-sm text-muted-foreground font-body"
+        >
+          ✓ Ergebnis bestätigt
+        </motion.p>
       )}
     </div>
   );

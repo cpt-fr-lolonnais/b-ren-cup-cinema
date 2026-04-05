@@ -11,12 +11,10 @@ export default function SemiFinal1Results() {
   const matchups = getSfMatchups();
   const [showResult, setShowResult] = useState(false);
 
-  if (!matchups) return null;
-  const { sf1 } = matchups;
-  const teamA = sf1[0].team;
-  const teamB = sf1[1].team;
+  const teamA = matchups?.sf1[0].team;
+  const teamB = matchups?.sf1[1].team;
 
-  const participants = [teamA.kid, teamA.adult, teamB.kid, teamB.adult];
+  const participants = teamA && teamB ? [teamA.kid, teamA.adult, teamB.kid, teamB.adult] : [];
 
   const handleComplete = useCallback((results: RaceResult[]) => {
     setSf1Results(results);
@@ -27,6 +25,8 @@ export default function SemiFinal1Results() {
       setTimeout(() => setShowResult(true), 500);
     }
   }, [sf1Results]);
+
+  if (!matchups || !teamA || !teamB) return null;
 
   const result = sf1Results.length === 4 ? getMatchWinner(sf1Results, teamA, teamB) : null;
   const canAdvance = sf1Results.length === 4 && sf1Results.every(r => r.gpPoints > 0);

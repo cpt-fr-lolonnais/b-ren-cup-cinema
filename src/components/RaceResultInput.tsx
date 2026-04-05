@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import Avatar from './Avatar';
-import { RaceResult, TEAM_COLORS, useTournamentStore } from '@/store/tournament';
+import { RaceResult, useTournamentStore, findTeamByMember, getTeamColor } from '@/store/tournament';
 
 const RANK_COLORS = ['#ffd166', '#c0c0c0', '#cd7f32', '#666'];
 const RANK_LABELS = ['1.', '2.', '3.', '4.'];
@@ -19,8 +19,7 @@ export default function RaceResultInput({ participants, onComplete, isPreview, p
   const [placed, setPlaced] = useState<RaceResult[]>([]);
   const [gpPoints, setGpPoints] = useState<Record<string, number>>({});
   const [confirmed, setConfirmed] = useState(false);
-  const getTeamByMember = useTournamentStore(s => s.getTeamByMember);
-  const getTeamColor = useTournamentStore(s => s.getTeamColor);
+  const teams = useTournamentStore(s => s.teams);
 
   useEffect(() => {
     if (isPreview && previewResults) {
@@ -58,14 +57,13 @@ export default function RaceResultInput({ participants, onComplete, isPreview, p
 
   const getTeamBorder = (name: string) => {
     if (!showTeamColors) return undefined;
-    const team = getTeamByMember(name);
+    const team = findTeamByMember(teams, name);
     if (!team) return undefined;
     return getTeamColor(team).hex;
   };
 
   return (
     <div className="w-full max-w-lg mx-auto space-y-3">
-      {/* Rank slots */}
       <div className="space-y-2">
         {[0, 1, 2, 3].map(i => (
           <div key={i} className="glass-card p-3 flex items-center gap-3 min-h-[56px]">
@@ -128,7 +126,6 @@ export default function RaceResultInput({ participants, onComplete, isPreview, p
         </motion.p>
       )}
 
-      {/* Available participants */}
       {!allPlaced && (
         <div className="pt-2">
           <p className="text-xs text-muted-foreground mb-2 font-body">Klicke auf einen Namen:</p>

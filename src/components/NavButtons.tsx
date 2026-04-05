@@ -12,7 +12,9 @@ interface Props {
 }
 
 export default function NavButtons({ canAdvance = true, nextLabel = 'Weiter', hideBack = false, hideNext = false, onNext, onBack }: Props) {
-  const { nextScreen, prevScreen, currentScreen } = useTournamentStore();
+  const nextScreen = useTournamentStore(s => s.nextScreen);
+  const prevScreen = useTournamentStore(s => s.prevScreen);
+  const currentScreen = useTournamentStore(s => s.currentScreen);
 
   const handleNext = () => {
     if (onNext) onNext();

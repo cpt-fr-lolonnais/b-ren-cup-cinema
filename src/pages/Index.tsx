@@ -40,10 +40,12 @@ const SCREENS = [
 ];
 
 export default function Index() {
-  const { currentScreen, nextScreen, prevScreen } = useTournamentStore();
+  const currentScreen = useTournamentStore(s => s.currentScreen);
+  const nextScreen = useTournamentStore(s => s.nextScreen);
+  const prevScreen = useTournamentStore(s => s.prevScreen);
 
   useEffect(() => {
-  const handleKey = (e: KeyboardEvent) => {
+    const handleKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();

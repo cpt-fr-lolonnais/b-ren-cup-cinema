@@ -4,7 +4,7 @@ import NavButtons from '@/components/NavButtons';
 import { SlideDown, StaggerItem } from '@/components/Stagger';
 
 export default function AdultsQualIntro() {
-  const { teams } = useTournamentStore();
+  const teams = useTournamentStore(s => s.teams);
 
   return (
     <div className="flex flex-col items-center justify-center px-6 max-w-3xl mx-auto w-full">

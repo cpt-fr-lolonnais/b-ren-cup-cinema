@@ -1,12 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useTournamentStore, TEAM_COLORS } from '@/store/tournament';
+import { useTournamentStore, TEAM_COLORS, computeTeamRankings } from '@/store/tournament';
 import CountUp from '@/components/CountUp';
 import NavButtons from '@/components/NavButtons';
 import { SlideDown, StaggerItem } from '@/components/Stagger';
 
 export default function TeamRankingScreen() {
-  const rankings = useTournamentStore(s => s.getTeamRankings());
+  const teams = useTournamentStore(s => s.teams);
+  const kidsQualification = useTournamentStore(s => s.kidsQualification);
+  const adultsQualification = useTournamentStore(s => s.adultsQualification);
+
+  const rankings = useMemo(
+    () => computeTeamRankings(teams, kidsQualification, adultsQualification),
+    [teams, kidsQualification, adultsQualification]
+  );
+
   const [sorted, setSorted] = useState(false);
 
   useEffect(() => {

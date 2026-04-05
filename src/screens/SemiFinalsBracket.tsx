@@ -1,16 +1,21 @@
-import { useTournamentStore, TEAM_COLORS } from '@/store/tournament';
+import { useMemo } from 'react';
+import { useTournamentStore, TEAM_COLORS, computeTeamRankings, computeSfMatchups } from '@/store/tournament';
 import NavButtons from '@/components/NavButtons';
 import { SlideDown, StaggerItem } from '@/components/Stagger';
 
 export default function SemiFinalsBracket() {
-  const matchups = useTournamentStore(s => s.getSfMatchups());
-  const { sf1Results, sf2Results, setScreen } = useTournamentStore();
+  const teams = useTournamentStore(s => s.teams);
+  const kidsQualification = useTournamentStore(s => s.kidsQualification);
+  const adultsQualification = useTournamentStore(s => s.adultsQualification);
+
+  const rankings = useMemo(
+    () => computeTeamRankings(teams, kidsQualification, adultsQualification),
+    [teams, kidsQualification, adultsQualification]
+  );
+  const matchups = useMemo(() => computeSfMatchups(rankings), [rankings]);
 
   if (!matchups) return null;
   const { sf1, sf2 } = matchups;
-
-  const sf1Done = sf1Results.length === 4;
-  const sf2Done = sf2Results.length === 4;
 
   const teamLabel = (tr: typeof sf1[0]) => `${tr.team.kid} & ${tr.team.adult}`;
   const teamColor = (tr: typeof sf1[0]) => TEAM_COLORS[tr.team.colorIndex].hex;
@@ -26,10 +31,8 @@ export default function SemiFinalsBracket() {
         </p>
       </StaggerItem>
 
-      {/* Bracket visualization */}
       <StaggerItem delay={0.3} className="w-full max-w-2xl">
         <div className="grid grid-cols-5 gap-2 items-center">
-          {/* Left side - SF1 */}
           <div className="col-span-1 space-y-2">
             <div className="glass-card p-3 text-sm font-body text-foreground" style={{ borderColor: teamColor(sf1[0]), borderWidth: 1 }}>
               <span className="text-xs text-muted-foreground">Rang 1</span><br/>
@@ -41,28 +44,24 @@ export default function SemiFinalsBracket() {
             </div>
           </div>
 
-          {/* Connector */}
           <div className="col-span-1 flex flex-col items-center justify-center">
             <div className="w-full h-px bg-muted-foreground/30" />
             <span className="text-xs text-muted-foreground font-body my-1">HF1</span>
             <div className="w-full h-px bg-muted-foreground/30" />
           </div>
 
-          {/* Center - Final */}
           <div className="col-span-1 flex items-center justify-center">
             <div className="glass-card p-4 text-center animate-pulse-glow" style={{ borderColor: '#e94560', borderWidth: 1 }}>
               <span className="font-display text-sm text-primary">FINAL</span>
             </div>
           </div>
 
-          {/* Connector */}
           <div className="col-span-1 flex flex-col items-center justify-center">
             <div className="w-full h-px bg-muted-foreground/30" />
             <span className="text-xs text-muted-foreground font-body my-1">HF2</span>
             <div className="w-full h-px bg-muted-foreground/30" />
           </div>
 
-          {/* Right side - SF2 */}
           <div className="col-span-1 space-y-2">
             <div className="glass-card p-3 text-sm font-body text-foreground" style={{ borderColor: teamColor(sf2[0]), borderWidth: 1 }}>
               <span className="text-xs text-muted-foreground">Rang 2</span><br/>

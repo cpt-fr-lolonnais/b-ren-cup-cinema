@@ -93,6 +93,74 @@ export interface TeamRanking {
   rank: number;
 }
 
+// ── Utility functions (outside store to avoid new-object-per-call issues) ──
+
+export function computeTeamRankings(teams: Team[], kidsQualification: RaceResult[], adultsQualification: RaceResult[]): TeamRanking[] {
+  if (teams.length < 4 || adultsQualification.length < 4) return [];
+
+  const rankings: TeamRanking[] = teams.map(team => {
+    const kidResult = kidsQualification.find(r => r.name === team.kid);
+    const adultResult = adultsQualification.find(r => r.name === team.adult);
+    const kidRank = kidResult?.rank ?? 0;
+    const adultRank = adultResult?.rank ?? 0;
+    const kidGp = kidResult?.gpPoints ?? 0;
+    const adultGp = adultResult?.gpPoints ?? 0;
+    return {
+      team: { ...team, adultRank },
+      kidRankPoints: kidRank,
+      adultRankPoints: adultRank,
+      totalRankPoints: kidRank + adultRank,
+      totalGpPoints: kidGp + adultGp,
+      rank: 0,
+    };
+  });
+
+  rankings.sort((a, b) => {
+    if (a.totalRankPoints !== b.totalRankPoints) return a.totalRankPoints - b.totalRankPoints;
+    return b.totalGpPoints - a.totalGpPoints;
+  });
+  rankings.forEach((r, i) => { r.rank = i + 1; });
+  return rankings;
+}
+
+export function computeSfMatchups(rankings: TeamRanking[]): { sf1: [TeamRanking, TeamRanking]; sf2: [TeamRanking, TeamRanking] } | null {
+  if (rankings.length < 4) return null;
+  return {
+    sf1: [rankings[0], rankings[3]],
+    sf2: [rankings[1], rankings[2]],
+  };
+}
+
+export function computeMatchWinner(results: RaceResult[], teamA: Team, teamB: Team) {
+  if (results.length < 4) return null;
+  const teamAMembers = [teamA.kid, teamA.adult];
+  const teamBMembers = [teamB.kid, teamB.adult];
+
+  let teamAPoints = 0, teamBPoints = 0, teamAGp = 0, teamBGp = 0;
+  results.forEach(r => {
+    if (teamAMembers.includes(r.name)) { teamAPoints += r.rank; teamAGp += r.gpPoints; }
+    if (teamBMembers.includes(r.name)) { teamBPoints += r.rank; teamBGp += r.gpPoints; }
+  });
+
+  const tiebreak = teamAPoints === teamBPoints;
+  let winner: Team, loser: Team;
+  if (teamAPoints < teamBPoints) { winner = teamA; loser = teamB; }
+  else if (teamBPoints < teamAPoints) { winner = teamB; loser = teamA; }
+  else { winner = teamAGp >= teamBGp ? teamA : teamB; loser = winner === teamA ? teamB : teamA; }
+
+  return { winner, loser, teamAPoints, teamBPoints, teamAGp, teamBGp, tiebreak };
+}
+
+export function findTeamByMember(teams: Team[], name: string): Team | undefined {
+  return teams.find(t => t.kid === name || t.adult === name);
+}
+
+export function getTeamColor(team: Team) {
+  return TEAM_COLORS[team.colorIndex % TEAM_COLORS.length];
+}
+
+// ── Store ──
+
 interface TournamentState {
   isPreview: boolean;
   currentScreen: number;
@@ -124,12 +192,6 @@ interface TournamentState {
   resetAll: () => void;
   undoLastTeam: () => void;
   loadDemoData: () => void;
-
-  getTeamRankings: () => TeamRanking[];
-  getTeamByMember: (name: string) => Team | undefined;
-  getTeamColor: (team: Team) => typeof TEAM_COLORS[number];
-  getSfMatchups: () => { sf1: [TeamRanking, TeamRanking]; sf2: [TeamRanking, TeamRanking] } | null;
-  getMatchWinner: (results: RaceResult[], teamA: Team, teamB: Team) => { winner: Team; loser: Team; teamAPoints: number; teamBPoints: number; teamAGp: number; teamBGp: number; tiebreak: boolean } | null;
 }
 
 const TOTAL_SCREENS = 15;
@@ -190,7 +252,6 @@ export const useTournamentStore = create<TournamentState>((set, get) => ({
       const kidResult = DEMO_KIDS_QUAL.find(r => r.name === kid);
       return { kid, adult, colorIndex: i, kidRank: kidResult?.rank ?? 0 };
     });
-    // Set adult ranks
     DEMO_ADULTS_QUAL.forEach(ar => {
       const t = teams.find(t => t.adult === ar.name);
       if (t) t.adultRank = ar.rank;
@@ -207,70 +268,5 @@ export const useTournamentStore = create<TournamentState>((set, get) => ({
       smallFinalResults: DEMO_SMALL_FINAL,
       grandFinalResults: DEMO_GRAND_FINAL,
     });
-  },
-
-  getTeamByMember: (name) => {
-    return get().teams.find(t => t.kid === name || t.adult === name);
-  },
-
-  getTeamColor: (team) => TEAM_COLORS[team.colorIndex % TEAM_COLORS.length],
-
-  getTeamRankings: () => {
-    const { teams, kidsQualification, adultsQualification } = get();
-    if (teams.length < 4 || adultsQualification.length < 4) return [];
-
-    const rankings: TeamRanking[] = teams.map(team => {
-      const kidResult = kidsQualification.find(r => r.name === team.kid);
-      const adultResult = adultsQualification.find(r => r.name === team.adult);
-      const kidRank = kidResult?.rank ?? 0;
-      const adultRank = adultResult?.rank ?? 0;
-      const kidGp = kidResult?.gpPoints ?? 0;
-      const adultGp = adultResult?.gpPoints ?? 0;
-      return {
-        team: { ...team, adultRank: adultRank },
-        kidRankPoints: kidRank,
-        adultRankPoints: adultRank,
-        totalRankPoints: kidRank + adultRank,
-        totalGpPoints: kidGp + adultGp,
-        rank: 0,
-      };
-    });
-
-    rankings.sort((a, b) => {
-      if (a.totalRankPoints !== b.totalRankPoints) return a.totalRankPoints - b.totalRankPoints;
-      return b.totalGpPoints - a.totalGpPoints; // higher GP = better
-    });
-
-    rankings.forEach((r, i) => { r.rank = i + 1; });
-    return rankings;
-  },
-
-  getSfMatchups: () => {
-    const rankings = get().getTeamRankings();
-    if (rankings.length < 4) return null;
-    return {
-      sf1: [rankings[0], rankings[3]],
-      sf2: [rankings[1], rankings[2]],
-    };
-  },
-
-  getMatchWinner: (results, teamA, teamB) => {
-    if (results.length < 4) return null;
-    const teamAMembers = [teamA.kid, teamA.adult];
-    const teamBMembers = [teamB.kid, teamB.adult];
-
-    let teamAPoints = 0, teamBPoints = 0, teamAGp = 0, teamBGp = 0;
-    results.forEach(r => {
-      if (teamAMembers.includes(r.name)) { teamAPoints += r.rank; teamAGp += r.gpPoints; }
-      if (teamBMembers.includes(r.name)) { teamBPoints += r.rank; teamBGp += r.gpPoints; }
-    });
-
-    const tiebreak = teamAPoints === teamBPoints;
-    let winner: Team, loser: Team;
-    if (teamAPoints < teamBPoints) { winner = teamA; loser = teamB; }
-    else if (teamBPoints < teamAPoints) { winner = teamB; loser = teamA; }
-    else { winner = teamAGp >= teamBGp ? teamA : teamB; loser = winner === teamA ? teamB : teamA; }
-
-    return { winner, loser, teamAPoints, teamBPoints, teamAGp, teamBGp, tiebreak };
   },
 }));

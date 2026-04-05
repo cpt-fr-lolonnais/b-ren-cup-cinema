@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTournamentStore, TEAM_COLORS, Team } from '@/store/tournament';
+import { useTournamentStore, TEAM_COLORS, Team, computeTeamRankings, computeSfMatchups, computeMatchWinner } from '@/store/tournament';
 import BearLogo from '@/components/BearLogo';
 
 interface ConfettiPiece {
@@ -72,16 +72,38 @@ function useConfetti(active: boolean) {
 }
 
 export default function ChampionRevealScreen() {
-  const { isPreview, sf1Results, sf2Results, smallFinalResults, grandFinalResults, getSfMatchups, getMatchWinner } = useTournamentStore();
+  const isPreview = useTournamentStore(s => s.isPreview);
+  const teams = useTournamentStore(s => s.teams);
+  const kidsQualification = useTournamentStore(s => s.kidsQualification);
+  const adultsQualification = useTournamentStore(s => s.adultsQualification);
+  const sf1Results = useTournamentStore(s => s.sf1Results);
+  const sf2Results = useTournamentStore(s => s.sf2Results);
+  const smallFinalResults = useTournamentStore(s => s.smallFinalResults);
+  const grandFinalResults = useTournamentStore(s => s.grandFinalResults);
+
   const [phase, setPhase] = useState(0);
 
-  const matchups = getSfMatchups();
-  const sf1Winner = matchups && sf1Results.length === 4 ? getMatchWinner(sf1Results, matchups.sf1[0].team, matchups.sf1[1].team) : null;
-  const sf2Winner = matchups && sf2Results.length === 4 ? getMatchWinner(sf2Results, matchups.sf2[0].team, matchups.sf2[1].team) : null;
-  const grandFinalResult = sf1Winner && sf2Winner && grandFinalResults.length === 4
-    ? getMatchWinner(grandFinalResults, sf1Winner.winner, sf2Winner.winner) : null;
-  const smallFinalResult = sf1Winner && sf2Winner && smallFinalResults.length === 4
-    ? getMatchWinner(smallFinalResults, sf1Winner.loser, sf2Winner.loser) : null;
+  const rankings = useMemo(() => computeTeamRankings(teams, kidsQualification, adultsQualification), [teams, kidsQualification, adultsQualification]);
+  const matchups = useMemo(() => computeSfMatchups(rankings), [rankings]);
+
+  const sf1Winner = useMemo(
+    () => matchups && sf1Results.length === 4 ? computeMatchWinner(sf1Results, matchups.sf1[0].team, matchups.sf1[1].team) : null,
+    [matchups, sf1Results]
+  );
+  const sf2Winner = useMemo(
+    () => matchups && sf2Results.length === 4 ? computeMatchWinner(sf2Results, matchups.sf2[0].team, matchups.sf2[1].team) : null,
+    [matchups, sf2Results]
+  );
+  const grandFinalResult = useMemo(
+    () => sf1Winner && sf2Winner && grandFinalResults.length === 4
+      ? computeMatchWinner(grandFinalResults, sf1Winner.winner, sf2Winner.winner) : null,
+    [sf1Winner, sf2Winner, grandFinalResults]
+  );
+  const smallFinalResult = useMemo(
+    () => sf1Winner && sf2Winner && smallFinalResults.length === 4
+      ? computeMatchWinner(smallFinalResults, sf1Winner.loser, sf2Winner.loser) : null,
+    [sf1Winner, sf2Winner, smallFinalResults]
+  );
 
   const champion = grandFinalResult?.winner;
   const runnerUp = grandFinalResult?.loser;
@@ -101,7 +123,6 @@ export default function ChampionRevealScreen() {
     return () => timers.forEach(clearTimeout);
   }, [isPreview]);
 
-  // Preview mode: mysterious screen
   if (isPreview) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
@@ -128,7 +149,6 @@ export default function ChampionRevealScreen() {
     <div className="relative flex flex-col items-center justify-center h-full overflow-hidden">
       <canvas ref={confettiRef} className="absolute inset-0 pointer-events-none z-50" />
 
-      {/* Phase 1: Ring of light */}
       <AnimatePresence>
         {phase >= 1 && (
           <motion.div
@@ -140,7 +160,6 @@ export default function ChampionRevealScreen() {
         )}
       </AnimatePresence>
 
-      {/* Phase 1: Bear logo */}
       {phase >= 1 && (
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
@@ -151,7 +170,6 @@ export default function ChampionRevealScreen() {
         </motion.div>
       )}
 
-      {/* Phase 2: Title */}
       {phase >= 2 && (
         <motion.h1
           initial={{ opacity: 0, scale: 1.5, y: -20 }}
@@ -164,7 +182,6 @@ export default function ChampionRevealScreen() {
         </motion.h1>
       )}
 
-      {/* Phase 3: Winner card */}
       {phase >= 3 && champion && (
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
@@ -183,7 +200,6 @@ export default function ChampionRevealScreen() {
         </motion.div>
       )}
 
-      {/* Phase 4: Full standings */}
       {phase >= 4 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}

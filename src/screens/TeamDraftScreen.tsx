@@ -7,17 +7,22 @@ import NavButtons from '@/components/NavButtons';
 import { SlideDown, StaggerItem } from '@/components/Stagger';
 
 export default function TeamDraftScreen() {
-  const { kidsQualification, isPreview, teams, addTeam, draftStep, setDraftStep, undoLastTeam, nextScreen } = useTournamentStore();
+  const kidsQualification = useTournamentStore(s => s.kidsQualification);
+  const isPreview = useTournamentStore(s => s.isPreview);
+  const teams = useTournamentStore(s => s.teams);
+  const addTeam = useTournamentStore(s => s.addTeam);
+  const draftStep = useTournamentStore(s => s.draftStep);
+  const setDraftStep = useTournamentStore(s => s.setDraftStep);
+  const undoLastTeam = useTournamentStore(s => s.undoLastTeam);
+
   const [showTeamReveal, setShowTeamReveal] = useState(false);
   const [animatingPair, setAnimatingPair] = useState(false);
 
-  // Kids sorted by rank descending (worst first)
   const kidsByRank = [...kidsQualification].sort((a, b) => b.rank - a.rank);
   const currentKid = kidsByRank[draftStep];
   const pickedAdults = teams.map(t => t.adult);
   const availableAdults = ADULTS.filter(a => !pickedAdults.includes(a));
 
-  // Preview auto-selection (inlined to avoid stale closure)
   useEffect(() => {
     if (!isPreview || draftStep >= 4) return;
     const timer = setTimeout(() => {
@@ -35,6 +40,7 @@ export default function TeamDraftScreen() {
       }
     }, 2000);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPreview, draftStep]);
 
   useEffect(() => {
@@ -99,7 +105,6 @@ export default function TeamDraftScreen() {
         </p>
       </StaggerItem>
 
-      {/* Current kid spotlight */}
       <AnimatePresence mode="wait">
         {currentKid && (
           <motion.div
@@ -119,7 +124,6 @@ export default function TeamDraftScreen() {
         )}
       </AnimatePresence>
 
-      {/* Available adults */}
       <div className="flex flex-wrap gap-3 justify-center">
         {availableAdults.map(name => (
           <motion.button
@@ -136,7 +140,6 @@ export default function TeamDraftScreen() {
         ))}
       </div>
 
-      {/* Progress */}
       <div className="mt-8 flex gap-2">
         {[0, 1, 2, 3].map(i => (
           <div
@@ -147,7 +150,6 @@ export default function TeamDraftScreen() {
         ))}
       </div>
 
-      {/* Undo button */}
       {draftStep > 0 && !animatingPair && (
         <motion.button
           initial={{ opacity: 0 }}

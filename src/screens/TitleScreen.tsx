@@ -4,7 +4,11 @@ import { SlideDown, StaggerItem } from '@/components/Stagger';
 import { useTournamentStore } from '@/store/tournament';
 
 export default function TitleScreen() {
-  const { setPreview, resetAll, setScreen, loadDemoData, isPreview } = useTournamentStore();
+  const setPreview = useTournamentStore(s => s.setPreview);
+  const resetAll = useTournamentStore(s => s.resetAll);
+  const setScreen = useTournamentStore(s => s.setScreen);
+  const loadDemoData = useTournamentStore(s => s.loadDemoData);
+  const isPreview = useTournamentStore(s => s.isPreview);
 
   const startPreview = () => {
     loadDemoData();
@@ -25,7 +29,6 @@ export default function TitleScreen() {
 
   return (
     <div className="flex flex-col items-center justify-center text-center px-6 max-w-3xl mx-auto relative">
-      {/* Checkered pattern - decorative */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
         style={{
           backgroundImage: `repeating-conic-gradient(#fff 0% 25%, transparent 0% 50%)`,
@@ -79,7 +82,6 @@ export default function TitleScreen() {
         </StaggerItem>
       )}
 
-      {/* Decorative racing stripes */}
       <div className="absolute bottom-0 left-0 right-0 h-1 flex">
         {['#e94560', '#4361ee', '#06d6a0', '#ffd166', '#e94560', '#4361ee'].map((c, i) => (
           <div key={i} className="flex-1 h-full" style={{ background: c, opacity: 0.4 }} />

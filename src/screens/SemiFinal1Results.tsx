@@ -1,14 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useTournamentStore, DEMO_SF1, RaceResult, TEAM_COLORS } from '@/store/tournament';
+import { useTournamentStore, DEMO_SF1, RaceResult, TEAM_COLORS, computeTeamRankings, computeSfMatchups, computeMatchWinner } from '@/store/tournament';
 import RaceResultInput from '@/components/RaceResultInput';
 import NavButtons from '@/components/NavButtons';
 import CountUp from '@/components/CountUp';
 import { SlideDown, StaggerItem } from '@/components/Stagger';
 
 export default function SemiFinal1Results() {
-  const { isPreview, sf1Results, setSf1Results, getSfMatchups, getMatchWinner } = useTournamentStore();
-  const matchups = getSfMatchups();
+  const teams = useTournamentStore(s => s.teams);
+  const kidsQualification = useTournamentStore(s => s.kidsQualification);
+  const adultsQualification = useTournamentStore(s => s.adultsQualification);
+  const isPreview = useTournamentStore(s => s.isPreview);
+  const sf1Results = useTournamentStore(s => s.sf1Results);
+  const setSf1Results = useTournamentStore(s => s.setSf1Results);
+
+  const rankings = useMemo(() => computeTeamRankings(teams, kidsQualification, adultsQualification), [teams, kidsQualification, adultsQualification]);
+  const matchups = useMemo(() => computeSfMatchups(rankings), [rankings]);
   const [showResult, setShowResult] = useState(false);
 
   const teamA = matchups?.sf1[0].team;
@@ -26,6 +33,11 @@ export default function SemiFinal1Results() {
     }
   }, [sf1Results]);
 
+  const result = useMemo(
+    () => (sf1Results.length === 4 && teamA && teamB) ? computeMatchWinner(sf1Results, teamA, teamB) : null,
+    [sf1Results, teamA, teamB]
+  );
+
   if (!matchups || !teamA || !teamB) {
     return (
       <div className="flex flex-col items-center justify-center px-6">
@@ -37,7 +49,6 @@ export default function SemiFinal1Results() {
     );
   }
 
-  const result = sf1Results.length === 4 ? getMatchWinner(sf1Results, teamA, teamB) : null;
   const canAdvance = sf1Results.length === 4 && sf1Results.every(r => r.gpPoints > 0);
 
   return (

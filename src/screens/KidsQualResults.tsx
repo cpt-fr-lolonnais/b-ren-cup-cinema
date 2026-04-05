@@ -5,7 +5,9 @@ import NavButtons from '@/components/NavButtons';
 import { SlideDown, StaggerItem } from '@/components/Stagger';
 
 export default function KidsQualResults() {
-  const { isPreview, setKidsQualification, kidsQualification, nextScreen } = useTournamentStore();
+  const isPreview = useTournamentStore(s => s.isPreview);
+  const setKidsQualification = useTournamentStore(s => s.setKidsQualification);
+  const kidsQualification = useTournamentStore(s => s.kidsQualification);
 
   const handleComplete = useCallback((results: RaceResult[]) => {
     setKidsQualification(results);

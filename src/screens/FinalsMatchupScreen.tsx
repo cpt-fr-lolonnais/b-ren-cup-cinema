@@ -1,26 +1,28 @@
-import { useTournamentStore, TEAM_COLORS } from '@/store/tournament';
+import { useMemo } from 'react';
+import { useTournamentStore, TEAM_COLORS, computeTeamRankings, computeSfMatchups, computeMatchWinner } from '@/store/tournament';
 import NavButtons from '@/components/NavButtons';
 import { SlideDown, StaggerItem } from '@/components/Stagger';
 
 export default function FinalsMatchupScreen() {
-  const { sf1Results, sf2Results, getSfMatchups, getMatchWinner } = useTournamentStore();
-  const matchups = getSfMatchups();
+  const teams = useTournamentStore(s => s.teams);
+  const kidsQualification = useTournamentStore(s => s.kidsQualification);
+  const adultsQualification = useTournamentStore(s => s.adultsQualification);
+  const sf1Results = useTournamentStore(s => s.sf1Results);
+  const sf2Results = useTournamentStore(s => s.sf2Results);
 
-  if (!matchups) {
-    return (
-      <div className="flex flex-col items-center justify-center px-6">
-        <p className="text-muted-foreground font-body text-center">
-          Bitte zuerst die vorherigen Ergebnisse eintragen.
-        </p>
-        <NavButtons hideNext />
-      </div>
-    );
-  }
+  const rankings = useMemo(() => computeTeamRankings(teams, kidsQualification, adultsQualification), [teams, kidsQualification, adultsQualification]);
+  const matchups = useMemo(() => computeSfMatchups(rankings), [rankings]);
 
-  const sf1Winner = sf1Results.length === 4 ? getMatchWinner(sf1Results, matchups.sf1[0].team, matchups.sf1[1].team) : null;
-  const sf2Winner = sf2Results.length === 4 ? getMatchWinner(sf2Results, matchups.sf2[0].team, matchups.sf2[1].team) : null;
+  const sf1Winner = useMemo(
+    () => matchups && sf1Results.length === 4 ? computeMatchWinner(sf1Results, matchups.sf1[0].team, matchups.sf1[1].team) : null,
+    [matchups, sf1Results]
+  );
+  const sf2Winner = useMemo(
+    () => matchups && sf2Results.length === 4 ? computeMatchWinner(sf2Results, matchups.sf2[0].team, matchups.sf2[1].team) : null,
+    [matchups, sf2Results]
+  );
 
-  if (!sf1Winner || !sf2Winner) {
+  if (!matchups || !sf1Winner || !sf2Winner) {
     return (
       <div className="flex flex-col items-center justify-center px-6">
         <p className="text-muted-foreground font-body text-center">

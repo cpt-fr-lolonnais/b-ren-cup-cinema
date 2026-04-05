@@ -28,20 +28,14 @@ export default function RaceResultInput({ participants, onComplete, isPreview, p
       previewResults.forEach(r => { pts[r.name] = r.gpPoints; });
       setPlaced(previewResults);
       setGpPoints(pts);
-    }
-  }, [isPreview, previewResults]);
-
-  // Auto-confirm in preview mode
-  useEffect(() => {
-    if (isPreview && previewResults && placed.length === 4 && !confirmed) {
       const timer = setTimeout(() => {
-        const finalResults = placed.map(r => ({ ...r, gpPoints: gpPoints[r.name] ?? 0 }));
-        onComplete(finalResults);
+        onComplete(previewResults);
         setConfirmed(true);
-      }, 500);
+      }, 600);
       return () => clearTimeout(timer);
     }
-  }, [isPreview, previewResults, placed, gpPoints, confirmed, onComplete]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPreview, previewResults]);
 
   const available = participants.filter(p => !placed.find(r => r.name === p));
   const allPlaced = placed.length === 4;
@@ -111,6 +105,29 @@ export default function RaceResultInput({ participants, onComplete, isPreview, p
         ))}
       </div>
 
+      {!isPreview && allPlaced && allGpFilled && !confirmed && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          onClick={handleConfirm}
+          className="mt-4 mx-auto flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-body font-semibold text-primary-foreground shadow-lg shadow-primary/30"
+        >
+          <Check size={18} />
+          Bestätigen
+        </motion.button>
+      )}
+
+      {confirmed && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-4 flex items-center justify-center gap-1 text-center text-sm text-muted-foreground font-body"
+        >
+          <Check size={16} />
+          Ergebnis bestätigt
+        </motion.p>
+      )}
+
       {/* Available participants */}
       {!allPlaced && (
         <div className="pt-2">
@@ -130,33 +147,6 @@ export default function RaceResultInput({ participants, onComplete, isPreview, p
             ))}
           </div>
         </div>
-      )}
-
-      {/* Confirm button (only in live mode) */}
-      {!isPreview && allGpFilled && !confirmed && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex justify-center pt-2"
-        >
-          <button
-            onClick={handleConfirm}
-            className="bg-primary text-primary-foreground rounded-full px-6 py-2 font-body font-semibold flex items-center gap-2 hover:opacity-90 transition"
-          >
-            <Check size={18} />
-            Bestätigen
-          </button>
-        </motion.div>
-      )}
-
-      {confirmed && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center text-sm text-muted-foreground font-body"
-        >
-          ✓ Ergebnis bestätigt
-        </motion.p>
       )}
     </div>
   );
